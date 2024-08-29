@@ -35,28 +35,33 @@ class PyocdLibrary():
     ROBOT_AUTO_KEYWORDS = False
 
     def __init__(self):
+        try:
+            self._session = ConnectHelper.session_with_chosen_probe()
+            self._session.open()
+        except error:
+            print("Connection to probe failed in automatic way");
         return
 
     @keyword("Reset")
     def reset(self):
 
-        with ConnectHelper.session_with_chosen_probe() as session:
-            session.board.target.reset_and_halt()
-            while session.board.target.get_state() != session.board.target.State.HALTED:
-                pass
+        self._session.board.target.reset_and_halt()
+        while self._session.board.target.get_state() != self._session.board.target.State.HALTED:
+            pass
 
     @keyword("Load Firmware")
     def load_firmware(self, file: str):
 
-        with ConnectHelper.session_with_chosen_probe() as session:
-            flash = session.board.target.memory_map.get_boot_memory()
-            # Load firmware into device.
-            FileProgrammer(session).program(file)
-            session.board.target.reset_and_halt()
+        flash = self._session.board.target.memory_map.get_boot_memory()
+        # Load firmware into device.
+        FileProgrammer(self._session).program(file)
+        self._session.board.target.reset_and_halt()
 
     @keyword("Resume")
     def resume(self):
-        with ConnectHelper.session_with_chosen_probe() as session:
-            session.board.target.resume()
+        self._session.board.target.resume()
+
+    def __del__(self):
+        self._session.close()
 
 __all__ = ["__version__", "PyocdLibrary"]
