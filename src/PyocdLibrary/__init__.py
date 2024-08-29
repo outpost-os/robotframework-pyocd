@@ -41,7 +41,8 @@ class PyocdLibrary():
     def reset(self):
 
         with ConnectHelper.session_with_chosen_probe() as session:
-            while session.board.target.get_state() != Target.State.HALTED:
+            session.board.target.reset_and_halt()
+            while session.board.target.get_state() != session.board.target.State.HALTED:
                 pass
 
     @keyword("Load Firmware")
@@ -52,8 +53,6 @@ class PyocdLibrary():
             # Load firmware into device.
             FileProgrammer(session).program(file)
             session.board.target.reset_and_halt()
-            session.board.target.resume()
-
 
     @keyword("Resume")
     def resume(self):
