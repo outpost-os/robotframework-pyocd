@@ -24,23 +24,38 @@ from robot.api.deco import library, keyword
 from robot.libraries.BuiltIn import BuiltIn
 from pyocd.core.helpers import ConnectHelper
 from pyocd.flash.file_programmer import FileProgrammer
+import pyudev
 
 sys.tracebacklimit = 0
 
-@library(scope="GLOBAL", auto_keywords=True)
+@library(scope="GLOBAL", auto_keywords=False)
 class PyocdLibrary():
     """Class to handle OCD requests over pyocd"""
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
     ROBOT_AUTO_KEYWORDS = False
 
-    def __init__(self):
+    def __init__(self, probeid: str):
         try:
-            self._session = ConnectHelper.session_with_chosen_probe()
+            self._session = ConnectHelper.session_with_chosen_probe(unique_id = probeid)
             self._session.open()
         except error:
             print("Connection to probe failed in automatic way");
+        self._probe_tty = None
+        ctx = pyudev.Context()
+        for dev in ctx.list_devices(subsystem='tty'):
+            if dev.get('ID_SERIAL_SHORT') == probeid:
+                self._probe_tty = dev.device_node
+                break
         return
+
+    @keyword("Get Probe Vcp")
+    def get_vcp(self):
+        return self._probe_tty
+
+    @keyword("Probe Has Vcp")
+    def has_vcp(self) -> bool:
+        return bool(self._probe_tty is not None)
 
     @keyword("Reset")
     def reset(self):
@@ -61,7 +76,8 @@ class PyocdLibrary():
     def resume(self):
         self._session.board.target.resume()
 
+
     def __del__(self):
-        self._session.close()
+        pass
 
 __all__ = ["__version__", "PyocdLibrary"]
