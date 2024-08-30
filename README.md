@@ -24,19 +24,36 @@ This mean that Segger probes are not yet supported here as it requires a `target
 
 ## Usage
 
-This library is built to be use through the `Library` directive of Robot-Framework:
+This library is built to be use through the `Library` directive of Robot-Framework and requires a probe uid
+so that pyOCD is able to discriminate multiple probes being connected.
 
 ```robot
-Library         PyocdLibrary
+Library         PyocdLibrary    ${PROBE_UID}
 ```
 
-It is considered that the pyocd local configuration is made so that the probe is automatically selected in
-case of multiple probes connected to the host.
-This can be done at pyocd local through pyocd configuration (see https://pyocd.io/docs/configuration.html).
-
+By now, if the probe do not delivers a target identifier (like Segger probes), the pyOCD usage do not
+allow a clean connection to the AP.
 As a consequence, this small library do not support probe UID passing through robot ressource files.
 
 The following basic command are defined:
+
+
+### Probe Has Vcp
+
+Return true if a VCP tty port has been found associated to the probe UID.
+
+```robot
+Probe Has Vcp
+```
+
+### Get Probe Vcp
+
+Return the VCP tty name as a string, so that it can be used by other serial related robotframework
+modules to get back the device serial Output.
+
+```robot
+Get Probe Vcp
+```
 
 ### Load Firmware
 
@@ -68,6 +85,27 @@ A typical usage is:
 
 ```robot
 Resume
+```
+
+## Example
+
+A typical usage of this library is the followingr:
+
+```robot
+Library         SerialLibrary
+Library         PyocdLibrary    ${PROBE_UID}
+
+*** Test Cases ***
+
+Load And Read From Serial
+    Reset
+    Load Firmware           ${FIRMWARE_PATH}
+    ${vcp}                  Get Probe Vcp
+    Log                     Virtual port is ${vcp}
+    Connect                 ${vcp}    115200
+    Set Timeout             20
+    Resume
+    Read All
 ```
 
 ## License
